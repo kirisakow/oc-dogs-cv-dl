@@ -38,7 +38,7 @@ def _convert_cv2_to_pil(image: Union[Image.Image, np.ndarray]
 
 
 def _process_and_return_same_format(image: Union[Image.Image, np.ndarray],
-                                    process_func: Callable
+                                    process_func: Callable,
                                     ) -> Union[Image.Image, np.ndarray]:
     is_pil = isinstance(image, Image.Image)
     if is_pil:
@@ -71,8 +71,9 @@ def whiten_image(image: Union[Image.Image, np.ndarray]
 
 
 def equalize_histogram(image: Union[Image.Image, np.ndarray],
+                       *,
                        clip_limit: float = 2.0,
-                       grid_size: Tuple[int, int] = (8, 8)
+                       grid_size: Tuple[int, int] = (8, 8),
                        ) -> Union[Image.Image, np.ndarray]:
     def _equalize_cv2(img):
         if len(img.shape) == 3 and img.shape[2] == 3:
@@ -104,9 +105,9 @@ def resize_image(image: Union[Image.Image, np.ndarray],
 
 def normalize_image(image: Union[Image.Image, np.ndarray],
                     mean: Union[float, Tuple[float, float, float]] = 0.0,
-                    std: Union[float, Tuple[float, float, float]] = 1.0
+                    std: Union[float, Tuple[float, float, float]] = 1.0,
                     ) -> Union[Image.Image, np.ndarray]:
-    def _normalize_cv2(img):
+    def _normalize_cv2(img, mean=mean, std=std):
         img_normalized = img.astype(np.float32) / 255.0
         if isinstance(mean, (tuple, list)):
             mean = np.array(mean, dtype=np.float32)
@@ -117,7 +118,7 @@ def normalize_image(image: Union[Image.Image, np.ndarray],
             img_normalized = (img_normalized - mean) / std
         return img_normalized
 
-    return _process_and_return_same_format(image, _normalize_cv2)
+    return _process_and_return_same_format(image, lambda img: _normalize_cv2(img, mean, std))
 
 
 def convert_to_grayscale(image: Union[Image.Image, np.ndarray]
@@ -132,7 +133,7 @@ def convert_to_grayscale(image: Union[Image.Image, np.ndarray]
 
 def apply_gaussian_blur(image: Union[Image.Image, np.ndarray],
                         kernel_size: Tuple[int, int] = (5, 5),
-                        sigma_x: float = 0.0
+                        sigma_x: float = 0.0,
                         ) -> Union[Image.Image, np.ndarray]:
     def _blur_cv2(img):
         return cv2.GaussianBlur(img, kernel_size, sigmaX=sigma_x)
@@ -142,7 +143,7 @@ def apply_gaussian_blur(image: Union[Image.Image, np.ndarray],
 
 def mirror_image(image: Union[Image.Image, np.ndarray],
                  horizontal: bool = False,
-                 vertical: bool = False
+                 vertical: bool = False,
                  ) -> Union[Image.Image, np.ndarray]:
     def _mirror_cv2(img):
         if horizontal and vertical:
@@ -158,7 +159,7 @@ def mirror_image(image: Union[Image.Image, np.ndarray],
 
 def crop_image(image: Union[Image.Image, np.ndarray],
                x: int, y: int,
-               width: int, height: int
+               width: int, height: int,
                ) -> Union[Image.Image, np.ndarray]:
     def _crop_cv2(img):
         return img[y:y + height, x:x + width]
