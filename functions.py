@@ -87,16 +87,19 @@ def equalize_histogram(image: Union[Image.Image, np.ndarray],
 
 
 def resize_image(image: Union[Image.Image, np.ndarray],
-                 target_size: Union[Tuple[int, int], float],
-                 interpolation: int = cv2.INTER_LINEAR
+                 *,
+                 scaling_factor: Tuple[Union[float, int], Union[float, int]] = None,
+                 target_size: Tuple[Union[float, int], Union[float, int]] = None,
+                 interpolation: int = cv2.INTER_LINEAR,
                  ) -> Union[Image.Image, np.ndarray]:
-    def _resize_cv2(img, ts=target_size):
-        if isinstance(ts, (int, float)):
+    def _resize_cv2(img, scaling_factor=None, ts=target_size):
+        if isinstance(scaling_factor, tuple):
+            wscafac, hscafac = scaling_factor
             h, w = img.shape[:2]
-            ts = (int(w * ts), int(h * ts))
+            ts = (int(w * wscafac), int(h * hscafac))
         return cv2.resize(img, ts, interpolation=interpolation)
 
-    return _process_and_return_same_format(image, lambda img: _resize_cv2(img, target_size))
+    return _process_and_return_same_format(image, lambda img: _resize_cv2(img, scaling_factor, target_size))
 
 
 def normalize_image(image: Union[Image.Image, np.ndarray],
