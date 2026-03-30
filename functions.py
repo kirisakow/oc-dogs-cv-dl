@@ -31,6 +31,8 @@ def _convert_pil_to_cv2(image: Union[Image.Image, np.ndarray]
 def _convert_cv2_to_pil(image: Union[Image.Image, np.ndarray]
                         ) -> Image.Image:
     if isinstance(image, np.ndarray):
+        if image.dtype == np.float32:
+            image = (image * 255).clip(0, 255).astype(np.uint8)
         if len(image.shape) == 3 and image.shape[2] == 3:
             return Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         return Image.fromarray(image)
