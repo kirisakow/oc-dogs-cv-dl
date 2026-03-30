@@ -4,6 +4,7 @@ Includes whitening, equalization, scaling, and other preprocessing utilities.
 """
 
 from lxml import etree
+from PIL import Image
 from typing import Union, Tuple
 import cv2
 import numpy as np
@@ -19,16 +20,42 @@ def get_breed(path):
     return annotation.xpath("/annotation/object/name").pop().text
 
 
-def whiten_image(image: np.ndarray) -> np.ndarray:
+def _convert_pil_to_cv2(image: Union[Image.Image, np.ndarray]) -> np.ndarray:
+    """
+    Convert PIL Image to OpenCV numpy array (BGR format).
+
+    Args:
+        image: Input image as PIL Image or numpy array
+
+    Returns:
+        Image as numpy array in BGR format
+    """
+    if isinstance(image, Image.Image):
+        # Convert PIL Image to numpy array (RGB format)
+        image_np = np.array(image)
+        # Convert RGB to BGR for OpenCV
+        if len(image_np.shape) == 3 and image_np.shape[2] == 3:
+            return cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+        return image_np
+    elif isinstance(image, np.ndarray):
+        return image
+    else:
+        raise TypeError(f"Unsupported image type: {type(image)}")
+
+
+def whiten_image(image: Union[Image.Image, np.ndarray]) -> np.ndarray:
     """
     Perform image whitening (ZCA whitening) for normalization.
 
     Args:
-        image: Input image as numpy array (H, W, C)
+        image: Input image as PIL Image or numpy array (H, W, C)
 
     Returns:
         Whitened image as numpy array
     """
+    # Convert PIL to numpy if needed
+    image = _convert_pil_to_cv2(image)
+
     # Convert to float and reshape for covariance calculation
     img_float = image.astype(np.float32) / 255.0
     h, w, c = img_float.shape
@@ -59,18 +86,21 @@ def whiten_image(image: np.ndarray) -> np.ndarray:
     return whitened_img.astype(np.uint8)
 
 
-def equalize_histogram(image: np.ndarray, clip_limit: float = 2.0, grid_size: Tuple[int, int] = (8, 8)) -> np.ndarray:
+def equalize_histogram(image: Union[Image.Image, np.ndarray], clip_limit: float = 2.0, grid_size: Tuple[int, int] = (8, 8)) -> np.ndarray:
     """
     Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to enhance image contrast.
 
     Args:
-        image: Input image as numpy array
+        image: Input image as PIL Image or numpy array
         clip_limit: Threshold for contrast limiting (default: 2.0)
         grid_size: Grid size for CLAHE (default: (8, 8))
 
     Returns:
         Equalized image as numpy array
     """
+    # Convert PIL to numpy if needed
+    image = _convert_pil_to_cv2(image)
+    
     if len(image.shape) == 3 and image.shape[2] == 3:
         # Convert to YUV color space for better results on color images
         yuv_image = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)
@@ -91,34 +121,38 @@ def equalize_histogram(image: np.ndarray, clip_limit: float = 2.0, grid_size: Tu
     return equalized_image
 
 
-def resize_image(image: np.ndarray, target_size: Tuple[int, int], interpolation: int = cv2.INTER_LINEAR) -> np.ndarray:
+def resize_image(image: Union[Image.Image, np.ndarray], target_size: Tuple[int, int], interpolation: int = cv2.INTER_LINEAR) -> np.ndarray:
     """
     Resize image to target dimensions.
 
     Args:
-        image: Input image as numpy array
+        image: Input image as PIL Image or numpy array
         target_size: Target size as (width, height) tuple
         interpolation: OpenCV interpolation method (default: cv2.INTER_LINEAR)
 
     Returns:
         Resized image as numpy array
     """
+    # Convert PIL to numpy if needed
+    image = _convert_pil_to_cv2(image)
     return cv2.resize(image, target_size, interpolation=interpolation)
 
 
-def normalize_image(image: np.ndarray, mean: Union[float, Tuple[float, float, float]] = 0.0,
+def normalize_image(image: Union[Image.Image, np.ndarray], mean: Union[float, Tuple[float, float, float]] = 0.0,
                     std: Union[float, Tuple[float, float, float]] = 1.0) -> np.ndarray:
     """
     Normalize image pixel values.
 
     Args:
-        image: Input image as numpy array
+        image: Input image as PIL Image or numpy array
         mean: Mean value(s) to subtract (default: 0.0)
         std: Standard deviation value(s) to divide by (default: 1.0)
 
     Returns:
         Normalized image as numpy array (float32)
     """
+    # Convert PIL to numpy if needed
+    image = _convert_pil_to_cv2(image)
     image_normalized = image.astype(np.float32) / 255.0
 
     if isinstance(mean, (tuple, list)):
@@ -134,45 +168,50 @@ def normalize_image(image: np.ndarray, mean: Union[float, Tuple[float, float, fl
     return image_normalized
 
 
-def convert_to_grayscale(image: np.ndarray) -> np.ndarray:
+def convert_to_grayscale(image: Union[Image.Image, np.ndarray]) -> np.ndarray:
     """
     Convert color image to grayscale.
 
     Args:
-        image: Input image as numpy array
+        image: Input image as PIL Image or numpy array
 
     Returns:
         Grayscale image as numpy array
     """
+    # Convert PIL to numpy if needed
+    image = _convert_pil_to_cv2(image)
+    
     if len(image.shape) == 3 and image.shape[2] == 3:
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return image
 
 
-def apply_gaussian_blur(image: np.ndarray, kernel_size: Tuple[int, int] = (5, 5),
+def apply_gaussian_blur(image: Union[Image.Image, np.ndarray], kernel_size: Tuple[int, int] = (5, 5),
                        sigma_x: float = 0.0) -> np.ndarray:
     """
     Apply Gaussian blur for noise reduction.
 
     Args:
-        image: Input image as numpy array
+        image: Input image as PIL Image or numpy array
         kernel_size: Size of the Gaussian kernel (default: (5, 5))
         sigma_x: Standard deviation in X direction (default: 0.0 - auto-calculated)
 
     Returns:
         Blurred image as numpy array
     """
+    # Convert PIL to numpy if needed
+    image = _convert_pil_to_cv2(image)
     return cv2.GaussianBlur(image, kernel_size, sigmaX=sigma_x)
 
 
-def preprocess_for_cnn(image: np.ndarray, target_size: Tuple[int, int] = (224, 224),
+def preprocess_for_cnn(image: Union[Image.Image, np.ndarray], target_size: Tuple[int, int] = (224, 224),
                       whiten: bool = False, equalize: bool = False,
                       normalize: bool = True) -> np.ndarray:
     """
     Complete preprocessing pipeline for CNN input.
 
     Args:
-        image: Input image as numpy array
+        image: Input image as PIL Image or numpy array
         target_size: Target size for resizing (default: (224, 224))
         whiten: Apply whitening if True (default: False)
         equalize: Apply histogram equalization if True (default: False)
@@ -181,6 +220,9 @@ def preprocess_for_cnn(image: np.ndarray, target_size: Tuple[int, int] = (224, 2
     Returns:
         Preprocessed image ready for CNN input
     """
+    # Convert PIL to numpy if needed
+    image = _convert_pil_to_cv2(image)
+    
     # Convert to color if grayscale
     if len(image.shape) == 2:
         image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
