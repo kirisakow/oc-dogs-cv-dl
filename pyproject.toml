@@ -5,7 +5,7 @@ description = "Classification d'images à l'aide d'algorithmes de Deep Learning"
 authors = [
     {name = "Kiril Isakov",email = "kirix.isakov@gmail.com"}
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "lxml (>=6.0.2,<7.0.0)",
     "matplotlib (>=3.10.8,<4.0.0)",
@@ -22,6 +22,10 @@ dev = [
     "ipython (>=9.11.0,<10.0.0)",
     "jupyter (>=1.1.1,<2.0.0)",
     "ipykernel (>=7.2.0,<8.0.0)",
+]
+dl = [
+    "torch (>=2.11.0,<3.0.0)",
+    "torchvision (>=0.26.0,<0.27.0)"
 ]
 
 
