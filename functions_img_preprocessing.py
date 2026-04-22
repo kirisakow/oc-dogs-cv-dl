@@ -167,3 +167,15 @@ def crop_image(image: Union[Image.Image, np.ndarray],
         return img[y:y + height, x:x + width]
 
     return _process_and_return_same_format(image, _crop_cv2)
+
+
+def rotate_image(image: Union[Image.Image, np.ndarray],
+                 angle: int,
+                 ) -> Union[Image.Image, np.ndarray]:
+    def _rotate_cv2(img):
+        h, w = img.shape[:2]
+        center = (w // 2, h // 2)
+        rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+        return cv2.warpAffine(img, rotation_matrix, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+
+    return _process_and_return_same_format(image, _rotate_cv2)
