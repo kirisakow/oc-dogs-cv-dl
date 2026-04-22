@@ -1,5 +1,5 @@
-annotation/
-img/
+annotations/
+images/
 train_data.mat
 
 # Byte-compiled / optimized / DLL files
