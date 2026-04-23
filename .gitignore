@@ -1,5 +1,9 @@
 annotations/
 images/
+models/
+!annotations/.gitkeep
+!images/.gitkeep
+!models/.gitkeep
 train_data.mat
 
 # Byte-compiled / optimized / DLL files
