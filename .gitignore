@@ -1,8 +1,10 @@
 annotations/
 images/
+log/
 models/
 !annotations/.gitkeep
 !images/.gitkeep
+!log/.gitkeep
 !models/.gitkeep
 train_data.mat
 
