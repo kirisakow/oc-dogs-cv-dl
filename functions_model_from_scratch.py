@@ -2,7 +2,34 @@ from torchvision import transforms
 import keras.utils
 import matplotlib.pyplot as plt
 import numpy as np
+from keras import layers
 from PIL import Image
+from typing import Tuple
+
+
+def build_model_from_scratch(*, n_classes: int,
+                             target_img_size: Tuple[int],
+                             data_augm: keras.Sequential = None
+                             ):
+    x = keras.Input(shape=(*target_img_size, 3))
+
+    if data_augm:
+        x = data_augm(x)
+
+    x = layers.Rescaling(1./255)(x)
+
+    x = layers.Conv2D(32, 5, padding='same', activation='relu')(x)
+    x = layers.MaxPooling2D(2)(x)
+
+    x = layers.Conv2D(64, 5, padding='same', activation='relu')(x)
+    x = layers.MaxPooling2D(2)(x)
+
+    x = layers.Flatten()(x)
+    x = layers.Dense(512, activation='relu')(x)
+    # x = layers.Dropout(0.15)(x)
+
+    outputs = layers.Dense(n_classes, activation='softmax')(x)
+    return keras.Model(x, outputs)
 
 
 def plot_accuracy_and_loss_values(history):
