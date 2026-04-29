@@ -11,10 +11,11 @@ def build_model_from_scratch(*, n_classes: int,
                              target_img_size: Tuple[int],
                              data_augm: keras.Sequential = None
                              ):
-    x = keras.Input(shape=(*target_img_size, 3))
+    inputs = keras.Input(shape=(*target_img_size, 3))
 
+    x = inputs
     if data_augm:
-        x = data_augm(x)
+        x = data_augm(inputs)
 
     x = layers.Rescaling(1./255)(x)
 
@@ -26,10 +27,10 @@ def build_model_from_scratch(*, n_classes: int,
 
     x = layers.Flatten()(x)
     x = layers.Dense(512, activation='relu')(x)
-    # x = layers.Dropout(0.15)(x)
+    # x = layers.Dropout(0.5)(x)   # ← décommenter pour régulariser
 
     outputs = layers.Dense(n_classes, activation='softmax')(x)
-    return keras.Model(x, outputs)
+    return keras.Model(inputs, outputs)
 
 
 def plot_accuracy_and_loss_values(history):
