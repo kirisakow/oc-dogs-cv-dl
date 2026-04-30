@@ -1,16 +1,22 @@
 from torchvision import transforms
+import keras.models
 import keras.utils
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 from keras import layers
+from keras.src.callbacks.history import History
 from PIL import Image
-from typing import Tuple
+from typing import List, Tuple
 
 
-def build_model_from_scratch(*, n_classes: int,
+def build_model_from_scratch(n_classes: int,
                              target_img_size: Tuple[int],
-                             data_augm: keras.Sequential = None
-                             ):
+                             data_augm: keras.models.Sequential = None,
+                             dropout_rate: float = None,
+                             filters: List[int] = [32, 64],
+                             kernel_size: int = 3,
+                             ) -> keras.models.Model :
     inputs = keras.Input(shape=(*target_img_size, 3))
 
     x = inputs
@@ -19,30 +25,36 @@ def build_model_from_scratch(*, n_classes: int,
 
     x = layers.Rescaling(1./255)(x)
 
-    x = layers.Conv2D(32, 5, padding='same', activation='relu')(x)
-    x = layers.MaxPooling2D(2)(x)
-
-    x = layers.Conv2D(64, 5, padding='same', activation='relu')(x)
-    x = layers.MaxPooling2D(2)(x)
+    for n_filters in filters:
+        x = layers.Conv2D(n_filters, kernel_size, padding='same', activation='relu')(x)
+        x = layers.MaxPooling2D(2)(x)
 
     x = layers.Flatten()(x)
     x = layers.Dense(512, activation='relu')(x)
-    # x = layers.Dropout(0.5)(x)   # ← décommenter pour régulariser
+    if dropout_rate:
+        x = layers.Dropout(dropout_rate)(x)
 
     outputs = layers.Dense(n_classes, activation='softmax')(x)
     return keras.Model(inputs, outputs)
 
 
-def plot_accuracy_and_loss_values(history):
+def plot_accuracy_and_loss_values(history: History,
+                                  experiment_name: str = None
+                                  ) -> None:
     plt.figure(figsize=(12, 4))
+    if experiment_name:
+        plt.suptitle(experiment_name, fontsize=14)
 
+    # Plot training & validation accuracy values
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
     plt.title('Model accuracy')
     plt.ylabel('Accuracy')
-    plt.xlabel('Epoch')
+    plt.xlabel(None)
+    plt.xlim(1, len(history.history['accuracy']))
     plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     # Plot training & validation loss values
     plt.subplot(1, 2, 2)
@@ -50,8 +62,10 @@ def plot_accuracy_and_loss_values(history):
     plt.plot(history.history['val_loss'])
     plt.title('Model loss')
     plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.legend(['Train', 'Validation'], loc='upper right')
+    plt.xlabel(None)
+    plt.xlim(1, len(history.history['loss']))
+    plt.legend(['Train', 'Validation'], loc='lower left')
+    plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
     plt.tight_layout()
     plt.show()
