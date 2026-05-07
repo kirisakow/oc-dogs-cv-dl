@@ -1,13 +1,18 @@
+from keras import layers
+from keras.src.callbacks.history import History
+from PIL import Image
+from sklearn.metrics import confusion_matrix
 from torchvision import transforms
+from typing import List, Tuple, Union
 import keras.models
 import keras.utils
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-from keras import layers
-from keras.src.callbacks.history import History
-from PIL import Image
-from typing import List, Tuple
+import re
+import seaborn as sns
+
+BREED_ID_SPLITTER_REGEX_PTRN = re.compile(r'^n\d+-')
 
 
 def build_model_from_scratch(*,
@@ -58,6 +63,28 @@ def plot_accuracy_and_loss_values(history: History,
         plt.xlim(1, len(history.history[f'{metric_name}']))
         plt.legend(['Train', 'Validation'], loc=legend_location[metric_name])
         plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_confusion_matrix(model: keras.models.Model,
+                          X_test, y_test, class_labels,
+                          title: str = None,
+                          ) -> None:
+    y_pred = model.predict(X_test)
+    y_pred_cls = np.argmax(y_pred, axis=1)
+    y_true = np.argmax(y_test, axis=1) if len(y_test.shape) > 1 else y_test
+    cm = confusion_matrix(y_true, y_pred_cls)
+    plt.figure(figsize=(6, 4))
+    class_labels = tuple(BREED_ID_SPLITTER_REGEX_PTRN.split(label_with_id)[1] for label_with_id in class_labels)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=class_labels, yticklabels=class_labels)
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=45, va='top')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    if title:
+        plt.title(title)
     plt.tight_layout()
     plt.show()
 
