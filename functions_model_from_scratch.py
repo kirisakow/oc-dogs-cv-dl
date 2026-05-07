@@ -1,4 +1,7 @@
 from keras import layers
+from keras.applications.efficientnet import EfficientNetB0
+from keras.applications.efficientnet_v2 import EfficientNetV2B0
+from keras.applications.vgg16 import VGG16
 from keras.src.callbacks.history import History
 from PIL import Image
 from sklearn.metrics import confusion_matrix
@@ -13,6 +16,26 @@ import re
 import seaborn as sns
 
 BREED_ID_SPLITTER_REGEX_PTRN = re.compile(r'^n\d+-')
+
+
+def build_model_from_pretrained(*,
+                                pretrained_model: Union[EfficientNetB0, EfficientNetV2B0, VGG16],
+                                n_classes: int,
+                                target_img_size: Tuple[int],
+                                dropout_rate: float = None,
+                                experiment_name: str = 'CNN_model_from_pretrained',
+                                ) -> keras.models.Model:
+    inputs = layers.Input(shape=(*target_img_size, 3))
+    model = pretrained_model(include_top=False, input_tensor=inputs, weights="imagenet")
+    # Freeze the pretrained weights
+    model.trainable = False
+    # Rebuild top
+    x = layers.GlobalAveragePooling2D(name="avg_pool")(model.output)
+    x = layers.BatchNormalization()(x)
+    if dropout_rate:
+        x = layers.Dropout(dropout_rate)(x)
+    outputs = layers.Dense(n_classes, activation="softmax", name="pred")(x)
+    return keras.Model(inputs, outputs, name=experiment_name)
 
 
 def build_model_from_scratch(*,
