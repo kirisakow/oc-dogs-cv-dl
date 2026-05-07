@@ -10,13 +10,15 @@ from PIL import Image
 from typing import List, Tuple
 
 
-def build_model_from_scratch(n_classes: int,
+def build_model_from_scratch(*,
+                             n_classes: int,
                              target_img_size: Tuple[int],
                              data_augm: keras.models.Sequential = None,
                              dropout_rate: float = None,
                              filters: List[int] = [32, 64],
                              kernel_size: int = 3,
-                             ) -> keras.models.Model :
+                             experiment_name: str = 'CNN_model',
+                             ) -> keras.models.Model:
     inputs = keras.Input(shape=(*target_img_size, 3))
 
     x = inputs
@@ -35,7 +37,7 @@ def build_model_from_scratch(n_classes: int,
         x = layers.Dropout(dropout_rate)(x)
 
     outputs = layers.Dense(n_classes, activation='softmax')(x)
-    return keras.Model(inputs, outputs)
+    return keras.Model(inputs, outputs, name=experiment_name)
 
 
 def plot_accuracy_and_loss_values(history: History,
