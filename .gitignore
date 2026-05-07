@@ -6,6 +6,8 @@ models/
 !images/.gitkeep
 !log/.gitkeep
 !models/.gitkeep
+!models/from_pretrained/.gitkeep
+!models/from_scratch/.gitkeep
 train_data.mat
 
 # Byte-compiled / optimized / DLL files
