@@ -41,34 +41,23 @@ def build_model_from_scratch(*,
 
 
 def plot_accuracy_and_loss_values(history: History,
-                                  experiment_name: str = None
+                                  *,
+                                  suptitle: str,
+                                  legend_location: dict,
                                   ) -> None:
     plt.figure(figsize=(12, 4))
-    if experiment_name:
-        plt.suptitle(experiment_name, fontsize=14)
-
-    # Plot training & validation accuracy values
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('Model accuracy')
-    plt.ylabel('Accuracy')
-    plt.xlabel(None)
-    plt.xlim(1, len(history.history['accuracy']))
-    plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-
-    # Plot training & validation loss values
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('Model loss')
-    plt.ylabel('Loss')
-    plt.xlabel(None)
-    plt.xlim(1, len(history.history['loss']))
-    plt.legend(['Train', 'Validation'], loc='lower left')
-    plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-
+    if suptitle:
+        plt.suptitle(suptitle, fontsize=14)
+    for i, metric_name in enumerate(['accuracy', 'loss'], start=1):
+        plt.subplot(1, 2, i)
+        plt.plot(history.history[f'{metric_name}'])
+        plt.plot(history.history[f'val_{metric_name}'])
+        plt.title(f'Model {metric_name}')
+        plt.ylabel(f'{metric_name.capitalize()}')
+        plt.xlabel(None)
+        plt.xlim(1, len(history.history[f'{metric_name}']))
+        plt.legend(['Train', 'Validation'], loc=legend_location[metric_name])
+        plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     plt.tight_layout()
     plt.show()
 
