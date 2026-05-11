@@ -6,6 +6,7 @@ from keras.src.callbacks.history import History
 from pathlib import Path
 from PIL import Image
 from sklearn.metrics import confusion_matrix
+from typing import Callable, Union
 import keras.models
 import keras.utils
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ BREED_ID_SPLITTER_REGEX_PTRN = re.compile(r'^n\d+-')
 
 
 def build_model_from_pretrained(*,
-                                pretrained_model: EfficientNetB0 | EfficientNetV2B0 | VGG16,
+                                pretrained_model: Union[EfficientNetB0, EfficientNetV2B0, VGG16],
                                 n_classes: int,
                                 target_img_size: tuple[int],
                                 dropout_rate: float = None,
