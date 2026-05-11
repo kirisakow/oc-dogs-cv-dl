@@ -3,10 +3,9 @@ from keras.applications.efficientnet import EfficientNetB0
 from keras.applications.efficientnet_v2 import EfficientNetV2B0
 from keras.applications.vgg16 import VGG16
 from keras.src.callbacks.history import History
+from pathlib import Path
 from PIL import Image
 from sklearn.metrics import confusion_matrix
-from torchvision import transforms
-from typing import List, Tuple, Union
 import keras.models
 import keras.utils
 import matplotlib.pyplot as plt
@@ -14,14 +13,15 @@ import matplotlib.ticker as ticker
 import numpy as np
 import re
 import seaborn as sns
+import torchvision as tov
 
 BREED_ID_SPLITTER_REGEX_PTRN = re.compile(r'^n\d+-')
 
 
 def build_model_from_pretrained(*,
-                                pretrained_model: Union[EfficientNetB0, EfficientNetV2B0, VGG16],
+                                pretrained_model: EfficientNetB0 | EfficientNetV2B0 | VGG16,
                                 n_classes: int,
-                                target_img_size: Tuple[int],
+                                target_img_size: tuple[int],
                                 dropout_rate: float = None,
                                 experiment_name: str = 'CNN_model_from_pretrained',
                                 ) -> keras.models.Model:
@@ -40,10 +40,10 @@ def build_model_from_pretrained(*,
 
 def build_model_from_scratch(*,
                              n_classes: int,
-                             target_img_size: Tuple[int],
+                             target_img_size: tuple[int],
                              data_augm: keras.models.Sequential = None,
                              dropout_rate: float = None,
-                             filters: List[int] = [32, 64],
+                             filters: list[int] = [32, 64],
                              kernel_size: int = 3,
                              experiment_name: str = 'CNN_model',
                              ) -> keras.models.Model:
@@ -113,29 +113,46 @@ def plot_confusion_matrix(model: keras.models.Model,
 
 
 class MyKerasSequence(keras.utils.Sequence):
-    """Classe personnalisée, compatible avec Keras, pour charger les images et les labels"""
-    def __init__(self, paths, labels, batch_size, transform=None, target_size=None):
-        self.paths = paths
-        self.labels = labels
+    """Classe personnalisée, compatible avec Keras, pour charger les images et les labels, avec quelques options :
+        - batch_size (int)
+        - transform (torchvision.transforms.Compose)
+        - target_size (tuple[int, int])
+        """
+    def __init__(self,
+                 paths: tuple[Path],
+                 labels: tuple[str],
+                 batch_size: int,
+                 transform: tov.transforms.Compose = None,
+                 target_size: tuple[int, int] = (224, 224),
+                 ):
+        """
+        - paths (tuple[pathlib.Path]): x_set as paths to images
+        - labels (tuple[str]): y_set as class labels
+        - batch_size (int)
+        - transform (tov.transforms.Compose, optional). Defaults to None.
+        - target_size (tuple[int, int], optional). Defaults to (224, 224).
+        """
+        self.xset = paths
+        self.yset = labels
         self.batch_size = batch_size
-        self.transform = transform or transforms.Compose([
-            transforms.Resize(target_size),  # Ensure consistent image dimensions
-            transforms.ToTensor(),
+        self.transform = transform or tov.transforms.Compose([
+            tov.transforms.Resize(target_size),  # Ensure consistent image dimensions
+            tov.transforms.ToTensor(),
         ])
         # Fix Error: "Invalid dtype: str704": Convert string labels to numerical values if needed
-        if isinstance(self.labels[0], str):
-            unique_labels = np.unique(self.labels)
+        if isinstance(self.yset[0], str):
+            unique_labels = np.unique(self.yset)
             self.label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
-            self.labels = np.array([self.label_to_idx[label] for label in self.labels])
+            self.yset = np.array([self.label_to_idx[label] for label in self.yset])
         else:
-            self.labels = np.array(self.labels)
+            self.yset = np.array(self.yset)
 
     def __len__(self):
-        return int(np.ceil(len(self.paths) / self.batch_size))
+        return int(np.ceil(len(self.xset) / self.batch_size))
 
     def __getitem__(self, idx):
-        batch_paths = self.paths[idx*self.batch_size:(idx+1)*self.batch_size]
-        batch_labels = self.labels[idx*self.batch_size:(idx+1)*self.batch_size]
+        batch_paths = self.xset[idx*self.batch_size:(idx+1)*self.batch_size]
+        batch_labels = self.yset[idx*self.batch_size:(idx+1)*self.batch_size]
 
         batch_images = []
         for path in batch_paths:
