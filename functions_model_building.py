@@ -118,6 +118,7 @@ class MyKerasSequence(keras.utils.Sequence):
         - batch_size (int)
         - transform (torchvision.transforms.Compose)
         - target_size (tuple[int, int])
+        - preprocessing_func (Callable, optional): One of the matching Keras native preprocessing functions from `keras.applications.*.preprocess_input()`. Defaults to None.
         """
     def __init__(self,
                  paths: tuple[Path],
@@ -125,6 +126,7 @@ class MyKerasSequence(keras.utils.Sequence):
                  batch_size: int,
                  transform: tov.transforms.Compose = None,
                  target_size: tuple[int, int] = (224, 224),
+                 preprocessing_func: Callable = None,
                  ):
         """
         - paths (tuple[pathlib.Path]): x_set as paths to images
@@ -132,6 +134,7 @@ class MyKerasSequence(keras.utils.Sequence):
         - batch_size (int)
         - transform (tov.transforms.Compose, optional). Defaults to None.
         - target_size (tuple[int, int], optional). Defaults to (224, 224).
+        - preprocessing_func (Callable, optional): One of the matching Keras native preprocessing functions from `keras.applications.*.preprocess_input()`. Defaults to None.
         """
         self.xset = paths
         self.yset = labels
@@ -140,6 +143,7 @@ class MyKerasSequence(keras.utils.Sequence):
             tov.transforms.Resize(target_size),  # Ensure consistent image dimensions
             tov.transforms.ToTensor(),
         ])
+        self.preprocessing_func = preprocessing_func
         # Fix Error: "Invalid dtype: str704": Convert string labels to numerical values if needed
         if isinstance(self.yset[0], str):
             unique_labels = np.unique(self.yset)
@@ -169,5 +173,9 @@ class MyKerasSequence(keras.utils.Sequence):
             else:
                 raise ValueError(f"Unexpected image shape: {img_np.shape}")
             batch_images.append(img_np.astype(np.float32))
-
-        return np.array(batch_images), np.array(batch_labels)
+        batch_images = np.array(batch_images)
+        batch_labels = np.array(batch_labels)
+        if self.preprocessing_func:
+            # Fix bad perf by implementing preprocessing using one of the Keras native preprocessing functions from `keras.applications.*.preprocess_input()`
+            batch_images = self.preprocessing_func(batch_images * 255.0)
+        return batch_images, batch_labels
