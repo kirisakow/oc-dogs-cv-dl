@@ -31,7 +31,12 @@ def build_model_from_pretrained(*,
     # Freeze the pretrained weights
     model.trainable = False
     # Rebuild top
-    x = layers.GlobalAveragePooling2D(name="avg_pool")(model.output)
+    if 'VGG' in pretrained_model.__name__:
+        # Use Flatten() for VGG* models
+        x = layers.Flatten()(model.output)
+    else:
+        # Use GlobalAveragePooling2D() for EfficientNet* models
+        x = layers.GlobalAveragePooling2D()(model.output)
     x = layers.BatchNormalization()(x)
     if dropout_rate:
         x = layers.Dropout(dropout_rate)(x)
