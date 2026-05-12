@@ -6,6 +6,7 @@ from keras.src.callbacks.history import History
 from pathlib import Path
 from PIL import Image
 from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import LabelEncoder
 from typing import Callable, Union
 import keras.models
 import keras.utils
@@ -119,68 +120,46 @@ def plot_confusion_matrix(model: keras.models.Model,
 
 
 class MyKerasSequence(keras.utils.Sequence):
-    """Classe personnalisée, compatible avec Keras, pour charger les images et les labels, avec quelques options :
+    """Classe personnalisée, dérivée de keras.utils.Sequence, servant à charger
+    les images (X) et leurs libellés (y), avec quelques options.
+
+    Args:
+        - paths (tuple[pathlib.Path]): x_set as paths to images
+        - labels (tuple[str]): y_set as class labels
         - batch_size (int)
-        - transform (torchvision.transforms.Compose)
-        - target_size (tuple[int, int])
-        - preprocessing_func (Callable, optional): One of the matching Keras native preprocessing functions from `keras.applications.*.preprocess_input()`. Defaults to None.
-        """
+        - target_size (tuple[int, int], optional). Defaults to (224, 224).
+        - preprocessing_func (Callable, optional): One of the matching Keras
+        native preprocessing functions from `keras.applications.*.preprocess_input()`.
+        Defaults to None.
+    """
     def __init__(self,
                  paths: tuple[Path],
                  labels: tuple[str],
                  batch_size: int,
-                 transform: tov.transforms.Compose = None,
                  target_size: tuple[int, int] = (224, 224),
                  preprocessing_func: Callable = None,
                  ):
-        """
-        - paths (tuple[pathlib.Path]): x_set as paths to images
-        - labels (tuple[str]): y_set as class labels
-        - batch_size (int)
-        - transform (tov.transforms.Compose, optional). Defaults to None.
-        - target_size (tuple[int, int], optional). Defaults to (224, 224).
-        - preprocessing_func (Callable, optional): One of the matching Keras native preprocessing functions from `keras.applications.*.preprocess_input()`. Defaults to None.
-        """
         self.xset = paths
-        self.yset = labels
+        self.yset = LabelEncoder().fit_transform(labels)
         self.batch_size = batch_size
-        self.transform = transform or tov.transforms.Compose([
-            tov.transforms.Resize(target_size),  # Ensure consistent image dimensions
-            tov.transforms.ToTensor(),
-        ])
+        self.target_size = target_size
         self.preprocessing_func = preprocessing_func
-        # Fix Error: "Invalid dtype: str704": Convert string labels to numerical values if needed
-        if isinstance(self.yset[0], str):
-            unique_labels = np.unique(self.yset)
-            self.label_to_idx = {label: idx for idx, label in enumerate(unique_labels)}
-            self.yset = np.array([self.label_to_idx[label] for label in self.yset])
-        else:
-            self.yset = np.array(self.yset)
 
     def __len__(self):
         return int(np.ceil(len(self.xset) / self.batch_size))
 
     def __getitem__(self, idx):
-        batch_paths = self.xset[idx*self.batch_size:(idx+1)*self.batch_size]
-        batch_labels = self.yset[idx*self.batch_size:(idx+1)*self.batch_size]
-
+        idx_from = self.batch_size * idx
+        idx_to   = self.batch_size * (idx + 1)
         batch_images = []
-        for path in batch_paths:
+        for path in self.xset[idx_from:idx_to]:
             img = Image.open(path).convert('RGB')
-            img = self.transform(img)
-            # Convert from PyTorch NCHW to Keras NHWC format
-            img_np = img.numpy()
-            # PyTorch ToTensor() returns (C, H, W), Keras expects (H, W, C)
-            if img_np.ndim == 3 and img_np.shape[0] == 3:  # Check if it's CHW format
-                img_np = np.transpose(img_np, (1, 2, 0))  # CHW -> HWC
-            elif img_np.ndim == 3 and img_np.shape[2] == 3:  # Already in HWC format
-                pass  # No transformation needed
-            else:
-                raise ValueError(f"Unexpected image shape: {img_np.shape}")
-            batch_images.append(img_np.astype(np.float32))
+            img = img.resize(self.target_size, Image.Resampling.BILINEAR)
+            img_np = np.array(img, dtype=np.float32) / 255.0
+            batch_images.append(img_np)
         batch_images = np.array(batch_images)
-        batch_labels = np.array(batch_labels)
+        batch_encoded_labels = np.array(self.yset[idx_from:idx_to])
         if self.preprocessing_func:
-            # Fix bad perf by implementing preprocessing using one of the Keras native preprocessing functions from `keras.applications.*.preprocess_input()`
+            # Fix bad perf in transfer learning by implementing one of the Keras native preprocessing functions
             batch_images = self.preprocessing_func(batch_images * 255.0)
-        return batch_images, batch_labels
+        return batch_images, batch_encoded_labels
