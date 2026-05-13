@@ -120,17 +120,17 @@ def plot_confusion_matrix(model: keras.models.Model,
 
 
 class MyKerasSequence(keras.utils.Sequence):
-    """Classe personnalisée, dérivée de keras.utils.Sequence, servant à charger
-    les images (X) et leurs libellés (y), avec quelques options.
+    """Classe personnalisée, dérivée de keras.utils.Sequence, servant à
+    charger les images (X) et leurs libellés (y), avec quelques options.
 
     Args:
-        - paths (tuple[pathlib.Path]): x_set as paths to images
-        - labels (tuple[str]): y_set as class labels
-        - batch_size (int)
-        - target_size (tuple[int, int], optional). Defaults to (224, 224).
-        - preprocessing_func (Callable, optional): One of the matching Keras
-        native preprocessing functions from `keras.applications.*.preprocess_input()`.
-        Defaults to None.
+        paths (tuple[pathlib.Path]): x_set as paths to images
+        labels (tuple[str]): y_set as class labels
+        batch_size (int): batch size
+        target_size (tuple[int, int], optional): Defaults to (224, 224).
+        preprocessing_func (Callable, optional): One of the matching Keras
+            native preprocessing functions from `keras.applications.*.preprocess_input()`.
+            Defaults to None.
     """
     def __init__(self,
                  paths: tuple[Path],
