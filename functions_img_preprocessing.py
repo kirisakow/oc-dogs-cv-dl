@@ -1,7 +1,7 @@
 from lxml import etree
 from pathlib import Path
 from PIL import Image
-from typing import Callable, Tuple, Union
+from typing import Callable, Union
 import cv2
 import numpy as np
 
@@ -75,7 +75,7 @@ def whiten_image(image: Union[Image.Image, np.ndarray]
 def equalize_histogram(image: Union[Image.Image, np.ndarray],
                        *,
                        clip_limit: float = 2.0,
-                       grid_size: Tuple[int, int] = (8, 8),
+                       grid_size: tuple[int, int] = (8, 8),
                        ) -> Union[Image.Image, np.ndarray]:
     def _equalize_cv2(img):
         if len(img.shape) == 3 and img.shape[2] == 3:
@@ -91,8 +91,8 @@ def equalize_histogram(image: Union[Image.Image, np.ndarray],
 
 def resize_image(image: Union[Image.Image, np.ndarray],
                  *,
-                 scaling_factor: Tuple[Union[float, int], Union[float, int]] = None,
-                 target_size: Tuple[Union[float, int], Union[float, int]] = None,
+                 scaling_factor: tuple[Union[float, int], Union[float, int]] = None,
+                 target_size: tuple[Union[float, int], Union[float, int]] = None,
                  interpolation: int = cv2.INTER_LINEAR,
                  ) -> Union[Image.Image, np.ndarray]:
     def _resize_cv2(img, scaling_factor=None, ts=target_size):
@@ -106,8 +106,8 @@ def resize_image(image: Union[Image.Image, np.ndarray],
 
 
 def normalize_image(image: Union[Image.Image, np.ndarray],
-                    mean: Union[float, Tuple[float, float, float]] = 0.0,
-                    std: Union[float, Tuple[float, float, float]] = 1.0,
+                    mean: Union[float, tuple[float, float, float]] = 0.0,
+                    std: Union[float, tuple[float, float, float]] = 1.0,
                     ) -> Union[Image.Image, np.ndarray]:
     def _normalize_cv2(img, mean=mean, std=std):
         img_normalized = img.astype(np.float32) / 255.0
@@ -134,7 +134,7 @@ def convert_to_grayscale(image: Union[Image.Image, np.ndarray]
 
 
 def apply_gaussian_blur(image: Union[Image.Image, np.ndarray],
-                        kernel_size: Tuple[int, int] = (5, 5),
+                        kernel_size: tuple[int, int] = (5, 5),
                         sigma_x: float = 0.0,
                         ) -> Union[Image.Image, np.ndarray]:
     def _blur_cv2(img):
